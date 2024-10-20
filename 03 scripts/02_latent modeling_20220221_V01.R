@@ -1,16 +1,16 @@
 # Description --------------------------- --------------------------- ---------------------------
 # Project: Analysis of baseline legacy data (i.e., 2023)
 # Author: Dominik Bulla (dominik.bulla@gmail.com)
-# Date: 2023-03-15
-# Background: The client was a consortium of Germany’s biggest NGOs working with refugee/ IDP communities in Asia, Africa, and 
-# Latin America. The consortium initiated a project to strengthen child protection amongst refugees/ IDPs as well as their host 
-# communities. To guide programming, I was tasked to design a pre/ post evaluation design. As part of the evaluation design, a 
-# baseline was commissioned as well. I designed the baseline framework, which included of a multi-stage sampling design. Data 
-# was collected in country by local consultants. The data was collected using KOBO toolbox. The data was then pulled into R using 
-# an API. I used the data collected in country to perform the global baseline analysis. Within the current excerpt from the global 
-# baseline analysis, I determine the typical socio-demographic profile of primary caregivers that were interviewed across the 
-# different levels. To do so, I used sampling weights.
-# Purpose: Clean up and make the data set ready for complex survey analysis
+# Date: 2023-03-01
+# Background: I worked as part of a team to complete the midterm evaluation for an international client. 
+# The client project was about education. Amongst others, the client was interested in whether or not 
+# students at project schools exhibited higher levels of self-reported school engagement compared to 
+# students control at control schools. The example project presented here contains the latent factor 
+# modelling to answer this question. To do so, the lavaan package in R was used. At the time of writing, 
+# a major caveat of the package has been that the output tables could not be exported into csv automatically 
+# using tools such as stargazer. Thus, some of the statistics produced had to be manually included into 
+# the report prepared for the client. 
+# Purpose: Perform the latent factor modelling using lavaan.
 
 
 
@@ -36,8 +36,9 @@ midterm <- read.csv("02 processed data/midline_clean_20230221.csv")
 
 
 
-# Some stats on the school sample --------------------------- --------------------------- --------------------------- 
-
+# Some stats on the school sample (tabke 1) --------------------------- --------------------------- --------------------------- 
+# resulting table could also have been generated using gt package as well. However, client preferred tables that
+# could easily be edited in word. 
 sample <- midterm %>%
   group_by(code) %>%
   summarise(Status = mean(treatment),
@@ -57,15 +58,19 @@ write.csv(sample, "04 results/sample_overview_20230301.csv", row.names = FALSE)
 
 
 
-# item correlations --------------------------- --------------------------- --------------------------- 
+# item correlations (table 3) --------------------------- --------------------------- --------------------------- 
+# Note that data is categorical. Thus, polychoric correlation analysis was performed. 
+# resulting table could also have been generated using gt package as well. However, client preferred tables that
+# could easily be edited in word. 
 cor_matrix <- polychoric(midterm[, grep("school_", colnames(midterm))])
 round(cor_matrix$rho, 2)
 write.csv(round(cor_matrix$rho, 2), "04 results/item correlations_20230301.csv")
-rm(cor_matrix)
 
 
-# item ICC --------------------------- --------------------------- --------------------------- 
 
+# item ICC (table 2) --------------------------- --------------------------- --------------------------- 
+# ICCs provide an idnciation of the extent to which items vary at the between level. 
+# In case of substantial between-school variation, I would have performed multilevel analysis.   
 for (var in grep("school_", colnames(midterm))) {
   data <- midterm
   colnames(data)[var] <- "item"
@@ -83,7 +88,11 @@ rm(data, model, variance_components, between_group_variance, within_group_varian
 
 
 # Structural equation modeling to determine treatment effects --------------------------- --------------------------- ---------------------------
+# The lavaan package does not yet provide a feature to conviniently export modeling output tables into csv. 
+# Thus, factor and regression results were exported using 'write.csv'. This is not ideal but works. 
+# Maybe write a function to automatize this?
 
+# Latent model to be estimated
 model_1 <- ' 
  # latent variables:
  
@@ -93,14 +102,22 @@ model_1 <- '
  
    engagement ~ West_Bank + female + age + treatment'
 
+# Estimate latent model specified
 fit <- sem(model = model_1, 
            data = midterm,
            ordered = c("school_sharing_ideas", "school_asking_questions", "school_ask_help"), 
            estimator = "WLSMV") 
 summary(fit, fit.measures = TRUE, standardized = TRUE)
+fitMeasures(fit)
 
-results_factor <- parameterEstimates(fit)[1:3, c("rhs", "est", "se", "pvalue")]
-results_regression <- parameterEstimates(fit)[4:7, c("rhs", "est", "se", "pvalue")]
+results_factor <- parameterEstimates(fit)[1:3, c("rhs", "est", "se", "pvalue")] %>%
+  mutate(est = round(est, 3),
+         se = round(se, 3),
+         pvalue = round(pvalue, 3))
+results_regression <- parameterEstimates(fit)[4:7, c("rhs", "est", "se", "pvalue")] %>%
+  mutate(est = round(est, 3),
+         se = round(se, 3),
+         pvalue = round(pvalue, 3))
 
 write.csv(results_factor, "04 results/factor_results_20230301.csv", row.names = FALSE)
 write.csv(results_regression, "04 results/regression_results_20230301.csv", row.names = FALSE)
