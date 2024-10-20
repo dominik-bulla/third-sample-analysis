@@ -13,3 +13,5 @@ The entire project consists of the following folders:
 The entire project is managed in RStudio. To review and edit the project, open the Rproj-file 'third-sample-analysis', which is located at the top-level of the repository. It opens up the two R-scripts, which are placed in the folder '03 scripts'.
 
 Note: the main bulk of the data is pulled from Kobo toolbox through a live API. Th credentials have been removed from the script '01_data loading & cleaning_20230221_V01'. Thus, running the script will NOT result in pulling in the data.  
+
+Also see 'https://github.com/dominik-bulla/third-sample-analysis'
