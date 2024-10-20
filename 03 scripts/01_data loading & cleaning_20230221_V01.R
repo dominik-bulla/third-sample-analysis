@@ -36,7 +36,7 @@ library(janitor)
 
 kobo_setup(url = "https://kf.kobotoolbox.org/",
            token = kobo_token(username = "domib",
-                              password = "!23KeZA2023",
+                              password = "******",
                               url = "https://kf.kobotoolbox.org"))
 assets <- kobo_asset_list()
 uid <- assets %>%
